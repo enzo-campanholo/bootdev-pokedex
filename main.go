@@ -18,6 +18,7 @@ type Config struct {
 	pokeapiClient      *pokeapi.Client
 	locationAreaOffset int
 	arguments          []string
+	pokedex            map[string]pokeapi.Pokemon
 }
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 	cache := pokecache.NewCache(5 * time.Minute)
 	config := Config{
 		pokeapiClient: pokeapi.NewClient(cache),
+		pokedex:       map[string]pokeapi.Pokemon{},
 	}
 
 	for {

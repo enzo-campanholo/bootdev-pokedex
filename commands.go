@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 
 	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokeapi"
 )
@@ -41,6 +42,21 @@ func init() {
 			name:        "explore",
 			description: "Display the Pokemons of a Location Area",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Try to catch a pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect the stats of a Pokemon",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "List all caught Pokemon",
+			callback:    commandPokedex,
 		},
 	}
 }
@@ -143,4 +159,68 @@ func parseLocationAreaPokemon(locationAreaResponse pokeapi.LocationAreaResponse)
 	}
 
 	return locationAreaPokemon
+}
+
+func commandCatch(config *Config) error {
+	if len(config.arguments) != 1 {
+		return errUnexpectedNumArgs
+	}
+
+	fmt.Printf("Throwing a Pokeball at %s...\n", config.arguments[0])
+
+	pokemon, err := config.pokeapiClient.GetPokemon(config.arguments[0])
+	if err != nil {
+		return err
+	}
+
+	// This doesn't work at all, we need to think of something different
+	chance := rand.IntN(pokemon.BaseExperience)
+	if chance < pokemon.BaseExperience/2 {
+		fmt.Printf("%s escaped!\n", config.arguments[0])
+		return nil
+	}
+
+	config.pokedex[config.arguments[0]] = pokemon
+	fmt.Printf("%s was caught!\n", config.arguments[0])
+	return nil
+}
+
+func commandInspect(config *Config) error {
+	if len(config.arguments) != 1 {
+		return errUnexpectedNumArgs
+	}
+
+	pokemon, ok := config.pokedex[config.arguments[0]]
+	if !ok {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+
+	stats := map[string]int{}
+
+	for _, stat := range pokemon.Stats {
+		stats[stat.Stat.Name] = stat.BaseStat
+	}
+
+	fmt.Printf("Stats:\n  -hp: %d\n  -attack: %d\n  -defense: %d\n  -special-attack: %d\n  -special-defense: %d\n  -speed: %d\n", stats["hp"], stats["attack"], stats["defense"], stats["special-attack"], stats["special-defense"], stats["speed"])
+
+	fmt.Println("Types:")
+	for _, typ := range pokemon.Types {
+		fmt.Printf("  - %s\n", typ.Type.Name)
+	}
+
+	return nil
+}
+
+func commandPokedex(config *Config) error {
+	fmt.Println("Your Pokedex:")
+	for key, _ := range config.pokedex {
+		fmt.Printf(" - %s\n", key)
+	}
+
+	return nil
 }

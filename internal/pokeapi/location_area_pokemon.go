@@ -14,11 +14,6 @@ type LocationAreaResponse struct {
 	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
 }
 
-// Pokemon represents a Pokemon species identified by name.
-type Pokemon struct {
-	Name string `json:"name"`
-}
-
 // PokemonEncounter pairs a Pokemon with the location area it appears in.
 type PokemonEncounter struct {
 	Pokemon Pokemon `json:"pokemon"`
