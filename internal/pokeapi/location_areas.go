@@ -39,25 +39,30 @@ func (c *Client) GetLocationAreas(offset int) (LocationAreasResponse, error) {
 	query.Set("limit", strconv.Itoa(locationAreasPageSize))
 	endpoint.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return LocationAreasResponse{}, err
-	}
+	data, found := c.cache.Get(endpoint.String())
+	if !found {
+		req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+		if err != nil {
+			return LocationAreasResponse{}, err
+		}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return LocationAreasResponse{}, err
-	}
-	defer res.Body.Close()
+		res, err := c.httpClient.Do(req)
+		if err != nil {
+			return LocationAreasResponse{}, err
+		}
+		defer res.Body.Close()
 
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return LocationAreasResponse{}, err
-	}
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return LocationAreasResponse{}, err
+		}
 
-	if res.StatusCode > 299 {
-		err = fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(data))
-		return LocationAreasResponse{}, err
+		if res.StatusCode > 299 {
+			err = fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(data))
+			return LocationAreasResponse{}, err
+		}
+
+		c.cache.Add(endpoint.String(), data)
 	}
 
 	locationAreasResponse := LocationAreasResponse{}

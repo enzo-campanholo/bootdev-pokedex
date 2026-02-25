@@ -10,7 +10,7 @@ import (
 type command struct {
 	name        string
 	description string
-	callback    func(*pokeapi.Client) error
+	callback    func(*Config) error
 }
 
 var commands map[string]command
@@ -42,12 +42,12 @@ func init() {
 
 var errExit = errors.New("exit requested")
 
-func commandExit(_ *pokeapi.Client) error {
+func commandExit(_ *Config) error {
 	fmt.Printf("Closing the Pokedex... Goodbye!\n")
 	return errExit
 }
 
-func commandHelp(_ *pokeapi.Client) error {
+func commandHelp(_ *Config) error {
 	fmt.Printf("Welcome to the Pokedex!\n")
 	fmt.Printf("Usage:\n\n")
 
@@ -65,8 +65,8 @@ const (
 
 var locationAreaOffset int = 0
 
-func commandMap(pokeapiClient *pokeapi.Client) error {
-	locationAreasResponse, err := pokeapiClient.GetLocationAreas(locationAreaOffset)
+func commandMap(config *Config) error {
+	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(locationAreaOffset)
 	if err != nil {
 		return err
 	}
@@ -80,14 +80,14 @@ func commandMap(pokeapiClient *pokeapi.Client) error {
 	return nil
 }
 
-func commandMapb(pokeapiClient *pokeapi.Client) error {
+func commandMapb(config *Config) error {
 	if locationAreaOffset >= locationAreaLimit {
 		locationAreaOffset -= locationAreaLimit
 	} else {
 		locationAreaOffset = 0
 	}
 
-	locationAreasResponse, err := pokeapiClient.GetLocationAreas(locationAreaOffset)
+	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(locationAreaOffset)
 	if err != nil {
 		return err
 	}

@@ -4,15 +4,24 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-
-	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokeapi"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokeapi"
+	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokecache"
 )
+
+type Config struct {
+	pokeapiClient *pokeapi.Client
+}
 
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
-	pokeapiClient := pokeapi.NewClient()
+	cache := pokecache.NewCache(5 * time.Minute)
+	config := Config{
+		pokeapiClient: pokeapi.NewClient(cache),
+	}
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -35,7 +44,7 @@ func main() {
 			continue
 		}
 
-		if err := cmd.callback(pokeapiClient); err != nil {
+		if err := cmd.callback(&config); err != nil {
 			if errors.Is(err, errExit) {
 				break
 			}
