@@ -10,11 +10,14 @@ import (
 	"strconv"
 )
 
+// LocationArea represents a named location area returned by the PokeAPI.
 type LocationArea struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
 
+// LocationAreasResponse is the paginated response for the location-area
+// list endpoint.
 type LocationAreasResponse struct {
 	Count    int            `json:"count"`
 	Next     *string        `json:"next"`
@@ -24,6 +27,8 @@ type LocationAreasResponse struct {
 
 const locationAreasPageSize = 20
 
+// GetLocationAreas fetches a page of location areas starting at the given
+// offset.
 func (c *Client) GetLocationAreas(offset int) (LocationAreasResponse, error) {
 	if c == nil || c.httpClient == nil {
 		return LocationAreasResponse{}, errors.New("pokeapi client is not initialized")

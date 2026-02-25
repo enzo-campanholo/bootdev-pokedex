@@ -37,19 +37,25 @@ func init() {
 			description: "Display the previous 20 Location Areas",
 			callback:    commandMapb,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Display the Pokemons of a Location Area",
+			callback:    commandExplore,
+		},
 	}
 }
 
 var errExit = errors.New("exit requested")
 
 func commandExit(_ *Config) error {
-	fmt.Printf("Closing the Pokedex... Goodbye!\n")
+	fmt.Println("Closing the Pokedex... Goodbye!")
 	return errExit
 }
 
 func commandHelp(_ *Config) error {
-	fmt.Printf("Welcome to the Pokedex!\n")
-	fmt.Printf("Usage:\n\n")
+	fmt.Println("Welcome to the Pokedex!")
+	fmt.Println("Usage:")
+	fmt.Println()
 
 	for _, cmd := range commands {
 		fmt.Printf("%s: %s\n", cmd.name, cmd.description)
@@ -63,41 +69,39 @@ const (
 	maxLocationAreaOffset = 1093
 )
 
-var locationAreaOffset int = 0
-
 func commandMap(config *Config) error {
-	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(locationAreaOffset)
+	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(config.locationAreaOffset)
 	if err != nil {
 		return err
 	}
 
 	locationAreas := parseLocationAreas(locationAreasResponse)
 	for _, locationAreaName := range locationAreas {
-		fmt.Printf("%s\n", locationAreaName)
+		fmt.Println(locationAreaName)
 	}
 
-	locationAreaOffset += locationAreaLimit
+	config.locationAreaOffset += locationAreaLimit
 	return nil
 }
 
 func commandMapb(config *Config) error {
-	if locationAreaOffset >= locationAreaLimit {
-		locationAreaOffset -= locationAreaLimit
+	if config.locationAreaOffset >= locationAreaLimit {
+		config.locationAreaOffset -= locationAreaLimit
 	} else {
-		locationAreaOffset = 0
+		config.locationAreaOffset = 0
 	}
 
-	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(locationAreaOffset)
+	locationAreasResponse, err := config.pokeapiClient.GetLocationAreas(config.locationAreaOffset)
 	if err != nil {
 		return err
 	}
 
 	locationAreas := parseLocationAreas(locationAreasResponse)
 	for _, locationAreaName := range locationAreas {
-		fmt.Printf("%s\n", locationAreaName)
+		fmt.Println(locationAreaName)
 	}
 
-	locationAreaOffset += locationAreaLimit
+	config.locationAreaOffset += locationAreaLimit
 	return nil
 }
 
@@ -108,4 +112,35 @@ func parseLocationAreas(locationAreasResponse pokeapi.LocationAreasResponse) []s
 	}
 
 	return locationAreas
+}
+
+var errUnexpectedNumArgs = errors.New("unexpected number of arguments")
+
+func commandExplore(config *Config) error {
+	if len(config.arguments) != 1 {
+		return errUnexpectedNumArgs
+	}
+
+	locationAreaPokemonResponse, err := config.pokeapiClient.GetLocationAreaPokemon(config.arguments[0])
+	if err != nil {
+		return err
+	}
+
+	pokemonList := parseLocationAreaPokemon(locationAreaPokemonResponse)
+	fmt.Printf("Exploring %s...\n", config.arguments[0])
+	fmt.Println("Found Pokemon:")
+	for _, pokemonName := range pokemonList {
+		fmt.Printf(" - %s\n", pokemonName)
+	}
+
+	return nil
+}
+
+func parseLocationAreaPokemon(locationAreaResponse pokeapi.LocationAreaResponse) []string {
+	locationAreaPokemon := make([]string, 0, len(locationAreaResponse.PokemonEncounters))
+	for _, pokemonEncounter := range locationAreaResponse.PokemonEncounters {
+		locationAreaPokemon = append(locationAreaPokemon, pokemonEncounter.Pokemon.Name)
+	}
+
+	return locationAreaPokemon
 }

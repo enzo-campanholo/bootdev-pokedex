@@ -1,3 +1,4 @@
+// Pokedex is a CLI tool for browsing Pokemon location areas using the PokeAPI.
 package main
 
 import (
@@ -12,8 +13,11 @@ import (
 	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokecache"
 )
 
+// Config holds shared state passed to every command callback.
 type Config struct {
-	pokeapiClient *pokeapi.Client
+	pokeapiClient      *pokeapi.Client
+	locationAreaOffset int
+	arguments          []string
 }
 
 func main() {
@@ -44,6 +48,8 @@ func main() {
 			continue
 		}
 
+		config.arguments = userInput[1:]
+
 		if err := cmd.callback(&config); err != nil {
 			if errors.Is(err, errExit) {
 				break
@@ -51,8 +57,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "command %q failed: %v\n", cmd.name, err)
 		}
 	}
-
-	os.Exit(0)
 }
 
 func cleanInput(text string) []string {
