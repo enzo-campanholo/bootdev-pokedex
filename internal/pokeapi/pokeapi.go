@@ -2,14 +2,15 @@
 package pokeapi
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokecache"
 )
 
-const (
-	baseURL = "https://pokeapi.co/api/v2"
-)
+const baseURL = "https://pokeapi.co/api/v2"
 
 // Client is an HTTP client for the PokeAPI with built-in caching.
 type Client struct {
@@ -36,4 +37,27 @@ func NewClientWithHTTPClient(httpClient *http.Client, cache *pokecache.Cache) *C
 		baseURL:    baseURL,
 		cache:      cache,
 	}
+}
+
+func (c *Client) get(endpoint string, result any) error {
+	data, found := c.cache.Get(endpoint)
+	if !found {
+		res, err := c.httpClient.Get(endpoint)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode > 299 {
+			return fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(data))
+		}
+
+		c.cache.Add(endpoint, data)
+	}
+	return json.Unmarshal(data, result)
 }

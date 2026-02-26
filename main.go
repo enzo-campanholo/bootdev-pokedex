@@ -13,21 +13,19 @@ import (
 	"github.com/enzo-campanholo/bootdev-pokedex/internal/pokecache"
 )
 
-// Config holds shared state passed to every command callback.
-type Config struct {
-	pokeapiClient      *pokeapi.Client
-	locationAreaOffset int
-	arguments          []string
-	pokedex            map[string]pokeapi.Pokemon
-}
+var (
+	apiClient            *pokeapi.Client
+	nextLocationAreasURL string
+	prevLocationAreasURL string
+	pokedex              map[string]pokeapi.Pokemon
+)
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
 	cache := pokecache.NewCache(5 * time.Minute)
-	config := Config{
-		pokeapiClient: pokeapi.NewClient(cache),
-		pokedex:       map[string]pokeapi.Pokemon{},
-	}
+	apiClient = pokeapi.NewClient(cache)
+	pokedex = map[string]pokeapi.Pokemon{}
+
+	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -44,19 +42,18 @@ func main() {
 			continue
 		}
 
-		cmd, ok := commands[userInput[0]]
+		cmdName := userInput[0]
+		cmd, ok := commands[cmdName]
 		if !ok {
-			fmt.Printf("Unknown command: %q\n", userInput[0])
+			fmt.Printf("Unknown command: %q\n", cmdName)
 			continue
 		}
 
-		config.arguments = userInput[1:]
-
-		if err := cmd.callback(&config); err != nil {
+		if err := cmd.callback(userInput[1:]); err != nil {
 			if errors.Is(err, errExit) {
 				break
 			}
-			fmt.Fprintf(os.Stderr, "command %q failed: %v\n", cmd.name, err)
+			fmt.Fprintf(os.Stderr, "command %q failed: %v\n", cmdName, err)
 		}
 	}
 }
