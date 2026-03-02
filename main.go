@@ -1,4 +1,3 @@
-// Pokedex is a CLI tool for browsing Pokemon location areas using the PokeAPI.
 package main
 
 import (

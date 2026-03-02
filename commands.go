@@ -117,6 +117,22 @@ func commandExplore(args []string) error {
 	return nil
 }
 
+func catchRate(baseExperience int) float64 {
+	const (
+		maxCatchRate = 0.95
+		minCatchRate = 0.05
+	)
+
+	rate := 1.0 - (float64(baseExperience) / 300.0)
+	if rate > maxCatchRate {
+		return maxCatchRate
+	}
+	if rate < minCatchRate {
+		return minCatchRate
+	}
+	return rate
+}
+
 func commandCatch(args []string) error {
 	if len(args) != 1 {
 		return errUnexpectedNumArgs
@@ -129,8 +145,7 @@ func commandCatch(args []string) error {
 		return err
 	}
 
-	chance := rand.IntN(pokemon.BaseExperience)
-	if chance < pokemon.BaseExperience/2 {
+	if rand.Float64() > catchRate(pokemon.BaseExperience) {
 		fmt.Printf("%s escaped!\n", args[0])
 		return nil
 	}
