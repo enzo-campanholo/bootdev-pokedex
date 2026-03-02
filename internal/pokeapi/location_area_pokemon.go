@@ -1,64 +1,22 @@
 package pokeapi
 
-import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
-)
-
-// LocationAreaResponse is the response for a single location area,
-// containing the Pokemon that can be encountered there.
-type LocationAreaResponse struct {
-	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
-}
-
-// PokemonEncounter pairs a Pokemon with the location area it appears in.
-type PokemonEncounter struct {
-	Pokemon Pokemon `json:"pokemon"`
-}
-
-// GetLocationAreaPokemon fetches the Pokemon encounters for the named
+// GetLocationAreaPokemon returns the names of Pokemon found in the named
 // location area.
-func (c *Client) GetLocationAreaPokemon(locationAreaName string) (LocationAreaResponse, error) {
-	if c == nil || c.httpClient == nil {
-		return LocationAreaResponse{}, errors.New("pokeapi client is not initialized")
+func (c *Client) GetLocationAreaPokemon(name string) ([]string, error) {
+	var resp struct {
+		PokemonEncounters []struct {
+			Pokemon struct {
+				Name string `json:"name"`
+			} `json:"pokemon"`
+		} `json:"pokemon_encounters"`
+	}
+	if err := c.get(c.baseURL+"/location-area/"+name, &resp); err != nil {
+		return nil, err
 	}
 
-	endpoint := c.baseURL + "/location-area/" + locationAreaName
-
-	data, found := c.cache.Get(endpoint)
-	if !found {
-		req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-		if err != nil {
-			return LocationAreaResponse{}, err
-		}
-
-		res, err := c.httpClient.Do(req)
-		if err != nil {
-			return LocationAreaResponse{}, err
-		}
-		defer res.Body.Close()
-
-		data, err = io.ReadAll(res.Body)
-		if err != nil {
-			return LocationAreaResponse{}, err
-		}
-
-		if res.StatusCode > 299 {
-			err = fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(data))
-			return LocationAreaResponse{}, err
-		}
-
-		c.cache.Add(endpoint, data)
+	names := make([]string, len(resp.PokemonEncounters))
+	for i, enc := range resp.PokemonEncounters {
+		names[i] = enc.Pokemon.Name
 	}
-
-	var response LocationAreaResponse
-	err := json.Unmarshal(data, &response)
-	if err != nil {
-		return LocationAreaResponse{}, err
-	}
-
-	return response, nil
+	return names, nil
 }
